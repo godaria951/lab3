@@ -65,38 +65,3 @@ class TestObservable(unittest.TestCase):
 
 suite = unittest.TestLoader().loadTestsFromTestCase(TestObservable)
 unittest.TextTestRunner().run(suite)
-        self.message_received = message
-
-class TestObservable(unittest.TestCase):
-    def test_register_unregister(self):
-        observable = Observable()
-        observer1 = ConcreteObserver('Observer 1')
-        observer2 = ConcreteObserver('Observer 2')
-
-        observable.register(observer1)
-        observable.register(observer2)
-
-        self.assertEqual(len(observable.observers), 2)
-
-        observable.unregister(observer1)
-        self.assertEqual(len(observable.observers), 1)
-
-        observable.unregister(observer2)
-        self.assertEqual(len(observable.observers), 0)
-
-    def test_notify_observers(self):
-        observable = Observable()
-        observer1 = ConcreteObserver('Observer 1')
-        observer2 = ConcreteObserver('Observer 2')
-
-        observable.register(observer1)
-        observable.register(observer2)
-
-        message = 'Hello, Observers!'
-        observable.notify_observers(message)
-
-        self.assertEqual(observer1.message_received, message)
-        self.assertEqual(observer2.message_received, message)
-
-suite = unittest.TestLoader().loadTestsFromTestCase(TestObservable)
-unittest.TextTestRunner().run(suite)
