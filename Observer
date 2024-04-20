@@ -3,29 +3,22 @@ from abc import ABC, abstractmethod
 from random import uniform
 from typing import List
 
-
 class Stock(ABC):
 
     @abstractmethod
     def attach(self, trader: Trader) -> None:
-    
         pass
 
     @abstractmethod
-    def detach(self, trader: Trader) -> None:
-        
+    def detach(self, trader: Trader) -> None: 
         pass
 
     @abstractmethod
-    def notify(self) -> None:
-        
+    def notify(self) -> None: 
         pass
-
 
 class ConcreteStock(Stock):
-
     _price: float = None
-
     _traders: List[Trader] = []
 
     def attach(self, trader: Trader) -> None:
@@ -47,24 +40,18 @@ class ConcreteStock(Stock):
         print(f"Stock: Price changed to ${self._price}")
         self.notify()
 
-
 class Trader(ABC):
    
     @abstractmethod
     def update(self, stock: Stock) -> None:
-    
         pass
 
-
 class Buyer(Trader):
-  
     def update(self, stock: Stock) -> None:
         if stock._price < 100:
             print("Buyer: Stock price is low, considering buying.")
 
-
 class Seller(Trader):
-    
 
     def update(self, stock: Stock) -> None:
         if stock._price > 120:
