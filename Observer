@@ -1,35 +1,89 @@
-class Observer:
-    def update(self, message):
+from __future__ import annotations
+from abc import ABC, abstractmethod
+from random import uniform
+from typing import List
+
+
+class Stock(ABC):
+
+    @abstractmethod
+    def attach(self, trader: Trader) -> None:
+    
         pass
 
-class Observable:
-    def __init__(self):
-        self.observers = []
+    @abstractmethod
+    def detach(self, trader: Trader) -> None:
+        
+        pass
 
-    def register(self, observer):
-        if observer not in self.observers:
-            self.observers.append(observer)
+    @abstractmethod
+    def notify(self) -> None:
+        
+        pass
 
-    def unregister(self, observer):
-        if observer in self.observers:
-            self.observers.remove(observer)
 
-    def notify_observers(self, message):
-        for observer in self.observers:
-            observer.update(message)
+class ConcreteStock(Stock):
 
-class ConcreteObserver(Observer):
-    def __init__(self, name):
-        self.name = name
+    _price: float = None
 
-    def update(self, message):
-        print(f'{self.name} received message: {message}')
+    _traders: List[Trader] = []
 
-observable = Observable()
-observer1 = ConcreteObserver('Observer 1')
-observer2 = ConcreteObserver('Observer 2')
+    def attach(self, trader: Trader) -> None:
+        print("Stock: Attached a trader.")
+        self._traders.append(trader)
 
-observable.register(observer1)
-observable.register(observer2)
+    def detach(self, trader: Trader) -> None:
+        self._traders.remove(trader)
 
-observable.notify_observers('Hello, Observers!')
+    def notify(self) -> None:
+        print("Stock: Notifying traders...")
+        for trader in self._traders:
+            trader.update(self)
+
+    def fluctuate_price(self) -> None:
+
+        print("\nStock: Fluctuating price...")
+        self._price = round(uniform(50, 150), 2)
+        print(f"Stock: Price changed to ${self._price}")
+        self.notify()
+
+
+class Trader(ABC):
+   
+    @abstractmethod
+    def update(self, stock: Stock) -> None:
+    
+        pass
+
+
+class Buyer(Trader):
+  
+    def update(self, stock: Stock) -> None:
+        if stock._price < 100:
+            print("Buyer: Stock price is low, considering buying.")
+
+
+class Seller(Trader):
+    
+
+    def update(self, stock: Stock) -> None:
+        if stock._price > 120:
+            print("Seller: Stock price is high, considering selling.")
+
+
+if __name__ == "__main__":
+
+    stock = ConcreteStock()
+
+    buyer = Buyer()
+    stock.attach(buyer)
+
+    seller = Seller()
+    stock.attach(seller)
+
+    stock.fluctuate_price()
+    stock.fluctuate_price()
+
+    stock.detach(buyer)
+
+    stock.fluctuate_price()
