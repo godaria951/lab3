@@ -1,67 +1,116 @@
+from __future__ import annotations
 import unittest
+from unittest.mock import patch
+from io import StringIO
+from abc import ABC, abstractmethod
+from random import uniform
+from typing import List
 
-class Observer:
-    def update(self, message):
+
+class Stock(ABC):
+
+    @abstractmethod
+    def attach(self, trader: Trader) -> None:
         pass
 
-class Observable:
-    def __init__(self):
-        self.observers = []
+    @abstractmethod
+    def detach(self, trader: Trader) -> None:
+        pass
 
-    def register(self, observer):
-        if observer not in self.observers:
-            self.observers.append(observer)
+    @abstractmethod
+    def notify(self) -> None:
+        pass
 
-    def unregister(self, observer):
-        if observer in self.observers:
-            self.observers.remove(observer)
 
-    def notify_observers(self, message):
-        for observer in self.observers:
-            observer.update(message)
+class ConcreteStock(Stock):
 
-class ConcreteObserver(Observer):
-    def __init__(self, name):
-        self.name = name
-        self.message_received = None
+    _price: float = None
 
-    def update(self, message):
-        self.message_received = message
+    _traders: List[Trader] = []
 
-class TestObservable(unittest.TestCase):
+    def attach(self, trader: Trader) -> None:
+        print("Stock: Attached a trader.")
+        self._traders.append(trader)
+
+    def detach(self, trader: Trader) -> None:
+        self._traders.remove(trader)
+
+    def notify(self) -> None:
+        print("Stock: Notifying traders...")
+        for trader in self._traders:
+            trader.update(self)
+
+    def fluctuate_price(self) -> None:
+        print("\nStock: Fluctuating price...")
+        self._price = round(uniform(50, 150), 2)
+        print(f"Stock: Price changed to ${self._price}")
+        self.notify()
+
+
+class Trader(ABC):
+   
+    @abstractmethod
+    def update(self, stock: Stock) -> None:
+        pass
+
+
+class Buyer(Trader):
+  
+    def update(self, stock: Stock) -> None:
+        if stock._price < 100:
+            print("Buyer: Stock price is low, considering buying.")
+
+
+class Seller(Trader):
+    
+
+    def update(self, stock: Stock) -> None:
+        if stock._price > 120:
+            print("Seller: Stock price is high, considering selling.")
+
+
+class TestObserverPattern(unittest.TestCase):
     def setUp(self):
-        self.observable = Observable()
-        self.observer1 = ConcreteObserver('Observer 1')
-        self.observer2 = ConcreteObserver('Observer 2')
+        self.stock = ConcreteStock()
 
-    def test_register_unregister(self):
-        self.observable.register(self.observer1)
-        self.assertTrue(self.observer1 in self.observable.observers)
+    def test_attach_detach_buyer(self):
+        buyer = Buyer()
+        self.stock.attach(buyer)
+        self.assertIn(buyer, self.stock._traders)
+        self.stock.detach(buyer)
+        self.assertNotIn(buyer, self.stock._traders)
 
-        self.observable.unregister(self.observer1)
-        self.assertFalse(self.observer1 in self.observable.observers)
+    def test_attach_detach_seller(self):
+        seller = Seller()
+        self.stock.attach(seller)
+        self.assertIn(seller, self.stock._traders)
+        self.stock.detach(seller)
+        self.assertNotIn(seller, self.stock._traders)
 
-    def test_notify_observers(self):
-        self.observable.register(self.observer1)
-        self.observable.register(self.observer2)
+    @patch('sys.stdout', new_callable=StringIO)
+    def test_buyer_update(self, mock_stdout):
+        buyer = Buyer()
+        self.stock.attach(buyer)
+        self.stock._price = 90
+        self.stock.notify()
+        self.assertIn("Buyer: Stock price is low, considering buying.", mock_stdout.getvalue())
 
-        message = 'Hello, Observers!'
-        self.observable.notify_observers(message)
+    @patch('sys.stdout', new_callable=StringIO)
+    def test_seller_update(self, mock_stdout):
+        seller = Seller()
+        self.stock.attach(seller)
+        self.stock._price = 130
+        self.stock.notify()
+        self.assertIn("Seller: Stock price is high, considering selling.", mock_stdout.getvalue())
 
-        self.assertEqual(self.observer1.message_received, message)
-        self.assertEqual(self.observer2.message_received, message)
+    @patch('sys.stdout', new_callable=StringIO)
+    def test_fluctuate_price(self, mock_stdout):
+        self.stock.fluctuate_price()
+        self.assertIn("Stock: Fluctuating price...", mock_stdout.getvalue())
+        self.assertTrue(self.stock._price >= 50 and self.stock._price <= 150)
+        self.assertIn(f"Stock: Price changed to ${self.stock._price}", mock_stdout.getvalue())
 
-    def test_register_duplicate(self):
-        self.observable.register(self.observer1)
-        self.observable.register(self.observer1)
-        self.assertEqual(len(self.observable.observers), 1)
 
-    def test_unregister_non_existing(self):
-        self.observable.unregister(self.observer1)
-        self.assertEqual(len(self.observable.observers), 0)
-
-    def test_notify_no_observers(self):
-        self.observable.notify_observers('Test message')  # Повинно бути без помилки, немає спостерігачів
-
-suite = unittest.TestLoader().loadTestsFromTestCase(TestObservable)
-unittest.TextTestRunner().run(suite)
+if __name__ == '__main__':
+    suite = unittest.TestLoader().loadTestsFromTestCase(TestObserverPattern)
+    unittest.TextTestRunner().run(suite)
